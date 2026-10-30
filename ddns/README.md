@@ -56,10 +56,10 @@ openssl pkey -in private.pem -pubout -out public.pem
 
 ### 3. 生成 Basic 驗證資訊
 有些 Worker page 使用 Basic 驗證保護，需要提供一組帳號密碼給 Worker 用來驗證。
-```bash`
+```bash
 echo -n jack:1256 | sha256
 4f828794df6f100720347c020491547a98943c8bfd818d47701c5bd3c0a47bbf
-````
+```
 
 ---
 
