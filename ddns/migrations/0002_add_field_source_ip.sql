@@ -1,0 +1,1 @@
+ALTER TABLE ddns_logs ADD COLUMN source_ip TEXT;

@@ -1,0 +1,1 @@
+UPDATE ddns_logs SET source_ip = '**unknow**' WHERE source_ip IS NULL;

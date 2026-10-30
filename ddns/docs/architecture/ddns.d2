@@ -1,0 +1,87 @@
+vars: {
+  d2-config: {
+    layout-engine: elk
+  }
+}
+direction: right
+
+**.style.font-size: 30
+(** -> **)[*]: {
+  style.font-size: 30
+}
+(** <-> **)[*]: {
+  style.font-size: 30
+}
+
+**: {
+  &shape: rectangle
+  style.fill: "#FDEBDD"
+}
+
+client: Alpine Linux {
+  shape: person
+  label: HTTP Client
+  width: 80
+}
+
+cloudflare: Cloudflare {
+  label: ""
+  shape: cloud
+  style.fill: "#F38020"
+  style.font-color: "#FFFFFF"
+  width: 1800
+  worker: Cloudflare Worker {
+    direction: down
+    style.font-size: 24
+    style.fill: "#FABC89"
+
+    auth: Verify Ed25519 {
+    }
+    dns: DNS Update {
+    }
+    logs_auth: Basic Auth {
+    }
+    logs: View Logs {
+    }
+    auth -> dns
+    logs_auth -> logs
+  }
+  kv: KV {
+    shape: cylinder
+    label: "KV"
+    style.font-size: 20
+    style.fill: "#FABC89"
+    zones: Zones {}
+    records: Records {}
+  }
+  d1: D1 {
+    shape: cylinder
+    label: "D1 Database"
+    style.font-size: 20
+    style.fill: "#FABC89"
+    table: TABLE {
+      label: "ddns_logs"
+    }
+  }
+  api: Cloudflare API {
+    style.font-size: 20
+    style.fill: "#FABC89"
+    api_image: DNS/Zone API {
+      shape: image
+      style.font-size: 30
+      icon: ./icons/api-svgrepo-com.svg
+      width: 160
+      height: 160
+    }
+  }
+}
+
+
+client <-> cloudflare.worker.auth: "HTTPS POST /dns"
+client <-> cloudflare.worker.logs_auth: "HTTPS GET /logs"
+cloudflare.worker.dns <-> cloudflare.kv: "Lookup / Cache IDs"
+cloudflare.worker.dns -> cloudflare.api: "Update DNS"
+cloudflare.worker.dns <-> cloudflare.api: "Get Zone ID"
+cloudflare.worker.dns <-> cloudflare.api: "GET Record ID"
+cloudflare.worker.dns -> cloudflare.d1: "Write Logs"
+cloudflare.worker.logs <- cloudflare.d1: "Read Logs"
