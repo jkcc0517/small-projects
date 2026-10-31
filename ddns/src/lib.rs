@@ -1,6 +1,6 @@
 mod auth;
 mod cloudflare;
-mod signature;
+mod verify;
 use cloudflare::d1::get_logs;
 use serde::Deserialize;
 use std::future::Future;
@@ -9,23 +9,13 @@ use worker::*;
 const ZONES_KV: &str = "zones";
 const RECORDS_KV: &str = "records";
 
-use time::serde::format_description;
-use time::PrimitiveDateTime;
-
-format_description!(
-    my_custom_date_format,
-    PrimitiveDateTime,
-    "[year]-[month]-[day] [hour]:[minute]:[second]"
-);
-
 #[derive(Deserialize)]
 struct UpdateDnsRequestData {
     zone: String,   // main/base domain
     record: String, // dns record
     record_type: String,
     content: String, // ipv4, ipv6
-    #[serde(with = "my_custom_date_format")]
-    created_at: PrimitiveDateTime,
+    created_at: String,
 }
 
 async fn index(_req: Request, _ctx: RouteContext<()>) -> Result<Response> {
@@ -35,17 +25,16 @@ async fn index(_req: Request, _ctx: RouteContext<()>) -> Result<Response> {
 
 async fn dns(mut req: Request, ctx: RouteContext<()>) -> Result<Response> {
     let pem_text = ctx.secret("PEM_TEXT")?.to_string();
-    //let body: UpdateDnsRequestData = req.json().await?;
     let body_bytes = req.bytes().await?;
     let signature_base64 = req.headers().get("X-Signature")?.unwrap_or_default();
-    if let Err(e) = signature::verify_signature(&pem_text, &body_bytes, &signature_base64).await {
+    if let Err(e) = verify::verify_signature(&pem_text, &body_bytes, &signature_base64).await {
         console_error!("Signature verification failed: {}", e);
         return Response::error("Invalid signature", 403);
     }
     let body: UpdateDnsRequestData = serde_json::from_slice(&body_bytes)?;
-    if body.content.is_empty() {
-        return Err("Content can't be empty".into());
-    }
+    verify::verify_datetime(&body.created_at, 5)?;
+    verify::verify_content(&body.content)?;
+
     let source_ip = req.headers().get("CF-Connecting-IP")?.unwrap_or_default();
     let token = ctx.secret("CLOUDFLARE_API_TOKEN")?.to_string();
 
@@ -112,6 +101,8 @@ where
             );
             cloudflare::d1::write_log(&d1, "ERROR", "fn handle_errors", &log, &source_ip).await?;
             match err.to_string().as_str() {
+                "Datetime error: Future time" => Response::error(err.to_string(), 400),
+                "Signature expired" => Response::error(err.to_string(), 401),
                 "Unauthorized" => Response::builder()
                     .with_header("WWW-Authenticate", r#"Basic realm="DDNS Logs""#)?
                     .error("Unauthorized", 401),

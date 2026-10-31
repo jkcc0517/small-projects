@@ -6,12 +6,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let datetime_string: String = now.format("%Y-%m-%d %H:%M:%S").to_string();
 
     let body_string = serde_json::json!({
-        "zone": "chuchenchin.com",
-        "record": "fitness.chuchenchin.com",
-        "record_type": "AAAA",
-        "content": "2001:b011:7003:f7eb:be24:11ff:fe9e:d94a",
-        "created_at": datetime_string,
-    })
+            "zone": "chuchenchin.com",
+            "record": "fitness.chuchenchin.com",
+            "record_type": "AAAA",
+            "content": "2001:b011:7003:f7eb:be24:11ff:fe9e:d94a",
+//            "created_at": "2026-10-31 21:30:27",
+            "created_at": datetime_string,
+        })
     .to_string();
 
     let pem_string = std::fs::read_to_string("./private.pem")
