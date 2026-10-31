@@ -9,12 +9,23 @@ use worker::*;
 const ZONES_KV: &str = "zones";
 const RECORDS_KV: &str = "records";
 
+use time::serde::format_description;
+use time::PrimitiveDateTime;
+
+format_description!(
+    my_custom_date_format,
+    PrimitiveDateTime,
+    "[year]-[month]-[day] [hour]:[minute]:[second]"
+);
+
 #[derive(Deserialize)]
 struct UpdateDnsRequestData {
     zone: String,   // main/base domain
     record: String, // dns record
     record_type: String,
     content: String, // ipv4, ipv6
+    #[serde(with = "my_custom_date_format")]
+    created_at: PrimitiveDateTime,
 }
 
 async fn index(_req: Request, _ctx: RouteContext<()>) -> Result<Response> {
