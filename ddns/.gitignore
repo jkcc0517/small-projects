@@ -1,5 +1,7 @@
 target
 node_modules
+public.pem
+private.pem
 
 ### Wrangler ###
 wrangler.toml
