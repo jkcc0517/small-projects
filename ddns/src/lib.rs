@@ -32,6 +32,9 @@ async fn dns(mut req: Request, ctx: RouteContext<()>) -> Result<Response> {
         return Response::error("Invalid signature", 403);
     }
     let body: UpdateDnsRequestData = serde_json::from_slice(&body_bytes)?;
+    if body.content.is_empty() {
+        return Err("Content can't be empty".into());
+    }
     let source_ip = req.headers().get("CF-Connecting-IP")?.unwrap_or_default();
     let token = ctx.secret("CLOUDFLARE_API_TOKEN")?.to_string();
 

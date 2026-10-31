@@ -227,9 +227,20 @@ pub async fn update_dns_record(
     token: &str,
 ) -> Result<()> {
     let api = CloudflareApi::new(token)?;
-    let _result = api
+    let result = api
         .update_dns_record(zone_id, dns_record_id, content)
         .await?;
+    let result_content = result
+        .result
+        .ok_or("Update DNS record withou result")?
+        .content;
+    if content != result_content {
+        return Err(format!(
+            "Update DNS result to '{}' failed, current DNS result is '{}'",
+            content, result_content
+        )
+        .into());
+    }
     Ok(())
 }
 
@@ -239,8 +250,6 @@ pub async fn _get_dns_record_details(
     token: &str,
 ) -> Result<UpdateDnsRecordResult> {
     let api = CloudflareApi::new(token)?;
-    let result = api
-        .get_dns_record_details(zone_id, dns_record_id)
-        .await?;
+    let result = api.get_dns_record_details(zone_id, dns_record_id).await?;
     Ok(result)
 }
